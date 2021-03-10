@@ -20,11 +20,33 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 {
     public class OsuDifficultyCalculator : DifficultyCalculator
     {
+        private const double c = 0.32;
+        private const double beta = 0.5;
+
         private const double difficulty_multiplier = 0.0675;
+
+        private FinalSkill finalAim = new FinalSkill(null);
+        private FinalSkill finalSpeed = new FinalSkill(null);
 
         public OsuDifficultyCalculator(Ruleset ruleset, WorkingBeatmap beatmap)
             : base(ruleset, beatmap)
         {
+        }
+
+        private void processFinalSkills(Skill[] skills, IBeatmap beatmap)
+        {
+            double combinedBonus;
+            double aimDifficulty;
+            double speedDifficulty;
+            for (int i = 0; i < skills[0].StrainPeaks.Count; i++)
+            {
+                aimDifficulty = Math.Max(skills[0].StrainPeaks[i], skills[2].StrainPeaks[i]);
+                speedDifficulty = Math.Max(skills[1].StrainPeaks[i], skills[3].StrainPeaks[i]);
+                combinedBonus = aimDifficulty * speedDifficulty / 1800;
+
+                finalAim.StorePeak(aimDifficulty + combinedBonus);
+                finalSpeed.StorePeak(speedDifficulty + combinedBonus);
+            }
         }
 
         protected override DifficultyAttributes CreateDifficultyAttributes(IBeatmap beatmap, Mod[] mods, Skill[] skills, double clockRate)
@@ -32,9 +54,22 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (beatmap.HitObjects.Count == 0)
                 return new OsuDifficultyAttributes { Mods = mods, Skills = skills };
 
-            double aimRating = Math.Sqrt(skills[0].DifficultyValue()) * difficulty_multiplier;
-            double speedRating = Math.Sqrt(skills[1].DifficultyValue()) * difficulty_multiplier;
+            processFinalSkills(skills, beatmap);
+
+            double aimDifficulty = finalAim.DifficultyValue();
+            double speedDifficulty = finalSpeed.DifficultyValue();
+
+            double aimTotal = finalAim.TotalStrain;
+            double speedTotal = finalSpeed.TotalStrain;
+
+            double aimRating = Math.Sqrt(aimDifficulty) * difficulty_multiplier;
+            double speedRating = Math.Sqrt(speedDifficulty) * difficulty_multiplier;
+
+            //We calculate the SR first to avoid unnecessary inflation, this should pose no problems as it is just a display value.
             double starRating = aimRating + speedRating + Math.Abs(aimRating - speedRating) / 2;
+
+            aimRating *= Math.Pow(c + beta * (Math.Log10(aimTotal + aimDifficulty) - Math.Log10(aimDifficulty)), 0.33);
+            speedRating *= Math.Pow(c + beta * (Math.Log10(speedTotal + speedDifficulty) - Math.Log10(speedDifficulty)), 0.33);
 
             HitWindows hitWindows = new OsuHitWindows();
             hitWindows.SetDifficulty(beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty);
