@@ -20,8 +20,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 {
     public class OsuDifficultyCalculator : DifficultyCalculator
     {
-        private const double c = 0.32;
-        private const double beta = 0.5;
+        private const double c = 0.6;
+        private const double beta = 0.3;
 
         private const double difficulty_multiplier = 0.0675;
 
@@ -62,14 +62,30 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double aimTotal = finalAim.TotalStrain;
             double speedTotal = finalSpeed.TotalStrain;
 
-            double aimRating = Math.Sqrt(aimDifficulty) * difficulty_multiplier;
-            double speedRating = Math.Sqrt(speedDifficulty) * difficulty_multiplier;
+            double aimRating = Math.Sqrt(aimDifficulty);
+            double speedRating = Math.Sqrt(speedDifficulty);
 
             //We calculate the SR first to avoid unnecessary inflation, this should pose no problems as it is just a display value.
-            double starRating = aimRating + speedRating + Math.Abs(aimRating - speedRating) / 2;
+            double starRating = difficulty_multiplier * (aimRating + speedRating + Math.Abs(aimRating - speedRating)) / 2;
 
-            aimRating *= Math.Pow(c + beta * (Math.Log10(aimTotal + aimDifficulty) - Math.Log10(aimDifficulty)), 0.33);
-            speedRating *= Math.Pow(c + beta * (Math.Log10(speedTotal + speedDifficulty) - Math.Log10(speedDifficulty)), 0.33);
+            //consistency
+            double sigmoidScale = 6;
+            double strainCutoffPerc = 0.8;
+            double thresholdDistanceExp = 0.7;
+            double minConsistency = 12;
+            double maxConsistency = 38;
+
+            double totalAimBonus = finalAim.ConsistencyValue(aimRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
+            double totalSpeedBonus = finalSpeed.ConsistencyValue(speedRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
+
+            totalAimBonus = Math.Pow(totalAimBonus, 0.7) * 0.075;
+            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.075;
+
+            totalAimBonus += Math.Pow(c + beta * (Math.Log10(aimTotal + aimDifficulty) - Math.Log10(aimDifficulty)), 0.33);
+            totalSpeedBonus += Math.Pow(c + beta * (Math.Log10(speedTotal + speedDifficulty) - Math.Log10(speedDifficulty)), 0.33);
+
+            aimRating *= totalAimBonus * difficulty_multiplier;
+            speedRating *= totalSpeedBonus * difficulty_multiplier;
 
             HitWindows hitWindows = new OsuHitWindows();
             hitWindows.SetDifficulty(beatmap.BeatmapInfo.BaseDifficulty.OverallDifficulty);
