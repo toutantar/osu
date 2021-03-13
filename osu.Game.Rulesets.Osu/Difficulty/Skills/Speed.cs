@@ -38,7 +38,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double speedBonus = 0;
             if (deltaTime < min_speed_bonus)
-                speedBonus = Math.Pow((min_speed_bonus - deltaTime) / speed_balancing_factor, 2) * 0.75;
+                speedBonus = Math.Pow((min_speed_bonus - deltaTime) / speed_balancing_factor, 2) * 0.6;
 
             double rhythmBonus = 0;
             if (Previous.Count > 0)

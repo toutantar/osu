@@ -20,6 +20,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private const double control_spacing_scale = 3.5;
 
+        private const double flow_factor = 0.125;
+
         private const double repeatjump_min_spacing = 3 * 52;
         private const double repeatjump_max_spacing = 6 * 52;
 
@@ -75,8 +77,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 (Math.Sqrt(travelDistanceExp * jumpDistanceExp) + jumpDistanceExp + travelDistanceExp) / osuCurrent.StrainTime
             ) + controlBonus;
 
+            double flowBonus = 1.0 / (1.0 + Math.Pow(Math.E, osuCurrent.StrainTime - 86.0)) * flow_factor;
 
-            return (1.0 - repeatJumpPenalty) * aimValue;
+            return (1.0 - repeatJumpPenalty) * aimValue * (1.0 + flowBonus);
         }
 
         private double calculateControlBonus(OsuDifficultyHitObject osuCurrent, OsuDifficultyHitObject osuPrevious)
