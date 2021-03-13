@@ -100,7 +100,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             else if (Attributes.ApproachRate < 8.0)
                 approachRateFactor += 0.01 * (8.0 - Attributes.ApproachRate);
 
-            aimValue *= 1.0 + Math.Min(approachRateFactor, approachRateFactor/3 + approachRateFactor/3 * 2 * (totalHits / 1000.0));
+            double flashLightBonus = 1.0;
+            double approachRateBonus = 1.0 + Math.Min(approachRateFactor, approachRateFactor/3 + approachRateFactor/3 * 2 * (totalHits / 1000.0));
 
             // We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
             if (mods.Any(h => h is OsuModHidden))
@@ -109,12 +110,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (mods.Any(h => h is OsuModFlashlight))
             {
                 // Apply object-based bonus for flashlight.
-                aimValue *= 1.0 + 0.35 * Math.Min(1.0, totalHits / 200.0) +
+                flashLightBonus = 1.0 + 0.3825 * Math.Min(1.0, Math.Pow(totalHits / 200.0, 1.75)) +
                             (totalHits > 200
-                                ? 0.3 * Math.Min(1.0, (totalHits - 200) / 300.0) +
+                                ? 0.35 * Math.Min(1.0, (totalHits - 200) / 300.0) +
                                   (totalHits > 500 ? (totalHits - 500) / 1200.0 : 0.0)
                                 : 0.0);
             }
+
+            aimValue *= Math.Max(flashLightBonus, approachRateBonus);
 
             // Scale the aim value with accuracy _slightly_
             aimValue *= 0.5 + accuracy / 2.0;
