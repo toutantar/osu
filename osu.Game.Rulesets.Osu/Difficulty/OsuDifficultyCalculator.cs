@@ -70,19 +70,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             //consistency
             double sigmoidScale = 6;
-            double strainCutoffPerc = 0.8;
+            double strainCutoffPerc = 0.6;
             double thresholdDistanceExp = 0.7;
-            double minConsistency = 12;
+            double minConsistency = 19;
             double maxConsistency = 38;
 
             double totalAimBonus = finalAim.ConsistencyValue(aimRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
             double totalSpeedBonus = finalSpeed.ConsistencyValue(speedRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
 
-            totalAimBonus = Math.Pow(totalAimBonus, 0.7) * 0.075;
-            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.075;
+            totalAimBonus = Math.Pow(totalAimBonus, 0.7) * 0.045;
+            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.045;
 
-            totalAimBonus += Math.Pow(c + beta * (Math.Log10(aimTotal + aimDifficulty) - Math.Log10(aimDifficulty)), 0.33);
-            totalSpeedBonus += Math.Pow(c + beta * (Math.Log10(speedTotal + speedDifficulty) - Math.Log10(speedDifficulty)), 0.33);
+            totalAimBonus += Math.Pow(c + beta * Math.Log((aimTotal + aimDifficulty) / aimDifficulty, 10), 0.33);
+            totalSpeedBonus += Math.Pow(c + beta * Math.Log((speedTotal + speedDifficulty) / speedDifficulty, 10), 0.33);
 
             aimRating *= totalAimBonus * difficulty_multiplier;
             speedRating *= totalSpeedBonus * difficulty_multiplier;
