@@ -79,7 +79,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double totalSpeedBonus = finalSpeed.ConsistencyValue(speedRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
 
             totalAimBonus = Math.Pow(totalAimBonus, 0.7) * 0.045;
-            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.045;
+            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.035;
 
             totalAimBonus += Math.Pow(c + beta * Math.Log((aimTotal + aimDifficulty) / aimDifficulty, 10), 0.33);
             totalSpeedBonus += Math.Pow(c + beta * Math.Log((speedTotal + speedDifficulty) / speedDifficulty, 10), 0.33);

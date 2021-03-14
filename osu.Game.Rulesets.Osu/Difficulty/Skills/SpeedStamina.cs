@@ -11,7 +11,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
         }
 
-        protected override double SkillMultiplier => base.SkillMultiplier * 0.8135;
+        protected override double SkillMultiplier => base.SkillMultiplier * 0.8135 * 0;
         protected override double StrainDecayBase => base.StrainDecayBase * 1.3;
     }
 }
