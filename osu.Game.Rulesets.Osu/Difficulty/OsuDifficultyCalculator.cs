@@ -52,8 +52,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             int totalHits = beatmap.HitObjects.Count(h => h is HitCircle || h is Slider);
 
             //bit of a discrepancy here because the combined bonus is not taken into account
-            double aimTotal = (skills[0] as OsuSkill).LengthValue(totalHits) * 1.75;
-            double speedTotal = (skills[1] as OsuSkill).LengthValue(totalHits) * 1.75;
+            double aimTotal = (skills[0] as OsuSkill).LengthValue(totalHits) * 1.6;
+            double speedTotal = (skills[1] as OsuSkill).LengthValue(totalHits) * 1.6;
 
             double aimDifficulty = (skills[0] as OsuSkill).CombinedDifficultyValue(combinedBonuses);
             double speedDifficulty = (skills[1] as OsuSkill).CombinedDifficultyValue(combinedBonuses);
@@ -78,10 +78,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.045;
 
             //length bonus
-            double aimLengthBonus = 1.0 + 0.35 * Math.Min(1.0, aimTotal / 2000.0) +
-                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.45 : 0.0);
-            double speedLengthBonus = 1.0 + 0.35 * Math.Min(1.0, speedTotal / 2000.0) +
-                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.45 : 0.0);
+            double aimLengthBonus = 1.0 + 0.6 * Math.Min(1.0, aimTotal / 2000.0) +
+                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.7 : 0.0);
+            double speedLengthBonus = 1.0 + 0.2 * Math.Min(1.0, speedTotal / 2000.0) +
+                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.3 : 0.0);
 
             totalAimBonus += Math.Pow(aimLengthBonus, 0.33);
             totalSpeedBonus += Math.Pow(speedLengthBonus, 0.33);
