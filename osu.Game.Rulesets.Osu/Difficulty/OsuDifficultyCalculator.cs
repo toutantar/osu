@@ -20,33 +20,27 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 {
     public class OsuDifficultyCalculator : DifficultyCalculator
     {
-        private const double c = 0.6;
-        private const double beta = 0.3;
-
         private const double difficulty_multiplier = 0.0675;
-
-        private FinalSkill finalAim = new FinalSkill(null);
-        private FinalSkill finalSpeed = new FinalSkill(null);
 
         public OsuDifficultyCalculator(Ruleset ruleset, WorkingBeatmap beatmap)
             : base(ruleset, beatmap)
         {
         }
 
-        private void processFinalSkills(Skill[] skills, IBeatmap beatmap)
+        private List<double> calculateCombinedBonuses(Skill[] skills)
         {
-            double combinedBonus;
+            List<double> combinedBonuses = new List<double>();
             double aimDifficulty;
             double speedDifficulty;
+
             for (int i = 0; i < skills[0].StrainPeaks.Count; i++)
             {
-                aimDifficulty = Math.Max(skills[0].StrainPeaks[i], skills[2].StrainPeaks[i]);
-                speedDifficulty = Math.Max(skills[1].StrainPeaks[i], skills[3].StrainPeaks[i]);
-                combinedBonus = aimDifficulty * speedDifficulty / 1800;
-
-                finalAim.StorePeak(aimDifficulty + combinedBonus);
-                finalSpeed.StorePeak(speedDifficulty + combinedBonus);
+                aimDifficulty = skills[0].StrainPeaks[i];
+                speedDifficulty = skills[1].StrainPeaks[i];
+                combinedBonuses.Add(aimDifficulty * speedDifficulty / 3600);
             }
+
+            return combinedBonuses;
         }
 
         protected override DifficultyAttributes CreateDifficultyAttributes(IBeatmap beatmap, Mod[] mods, Skill[] skills, double clockRate)
@@ -54,13 +48,15 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (beatmap.HitObjects.Count == 0)
                 return new OsuDifficultyAttributes { Mods = mods, Skills = skills };
 
-            processFinalSkills(skills, beatmap);
+            List<double> combinedBonuses = calculateCombinedBonuses(skills);
+            int totalHits = beatmap.HitObjects.Count(h => h is HitCircle || h is Slider);
 
-            double aimDifficulty = finalAim.DifficultyValue();
-            double speedDifficulty = finalSpeed.DifficultyValue();
+            //bit of a discrepancy here because the combined bonus is not taken into account
+            double aimTotal = (skills[0] as OsuSkill).LengthValue(totalHits) * 1.75;
+            double speedTotal = (skills[1] as OsuSkill).LengthValue(totalHits) * 1.75;
 
-            double aimTotal = finalAim.TotalStrain;
-            double speedTotal = finalSpeed.TotalStrain;
+            double aimDifficulty = (skills[0] as OsuSkill).CombinedDifficultyValue(combinedBonuses);
+            double speedDifficulty = (skills[1] as OsuSkill).CombinedDifficultyValue(combinedBonuses);
 
             double aimRating = Math.Sqrt(aimDifficulty);
             double speedRating = Math.Sqrt(speedDifficulty);
@@ -75,14 +71,20 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double minConsistency = 19;
             double maxConsistency = 38;
 
-            double totalAimBonus = finalAim.ConsistencyValue(aimRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
-            double totalSpeedBonus = finalSpeed.ConsistencyValue(speedRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
+            double totalAimBonus = (skills[0] as OsuSkill).ConsistencyValue(aimRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
+            double totalSpeedBonus = (skills[1] as OsuSkill).ConsistencyValue(speedRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
 
             totalAimBonus = Math.Pow(totalAimBonus, 0.7) * 0.045;
-            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.035;
+            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.045;
 
-            totalAimBonus += Math.Pow(c + beta * Math.Log((aimTotal + aimDifficulty) / aimDifficulty, 10), 0.33);
-            totalSpeedBonus += Math.Pow(c + beta * Math.Log((speedTotal + speedDifficulty) / speedDifficulty, 10), 0.33);
+            //length bonus
+            double aimLengthBonus = 1.0 + 0.35 * Math.Min(1.0, aimTotal / 2000.0) +
+                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.45 : 0.0);
+            double speedLengthBonus = 1.0 + 0.35 * Math.Min(1.0, speedTotal / 2000.0) +
+                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.45 : 0.0);
+
+            totalAimBonus += Math.Pow(aimLengthBonus, 0.33);
+            totalSpeedBonus += Math.Pow(speedLengthBonus, 0.33);
 
             aimRating *= totalAimBonus * difficulty_multiplier;
             speedRating *= totalSpeedBonus * difficulty_multiplier;
@@ -133,9 +135,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         protected override Skill[] CreateSkills(IBeatmap beatmap, Mod[] mods) => new Skill[]
         {
             new Aim(mods),
-            new Speed(mods),
-            new AimStamina(mods),
-            new SpeedStamina(mods)
+            new Speed(mods)
         };
 
         protected override Mod[] DifficultyAdjustmentMods => new Mod[]

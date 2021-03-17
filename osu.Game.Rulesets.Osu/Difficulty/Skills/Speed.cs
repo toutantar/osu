@@ -13,7 +13,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     /// <summary>
     /// Represents the skill required to press keys with regards to keeping up with the speed at which objects need to be hit.
     /// </summary>
-    public class Speed : Skill
+    public class Speed : OsuSkill
     {
         protected override double SkillMultiplier => 1400;
         protected override double StrainDecayBase => 0.3;
@@ -48,7 +48,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 rhythmBonus = Math.Pow(Math.Min(Math.Max(timingDistance - 5.0, 0) / 10.0, 1.0), 2.0) * 0.1;
             }
 
-            return (1.0 + speedBonus + rhythmBonus) / osuCurrent.StrainTime;
+            double strainValue = (1.0 + speedBonus + rhythmBonus) / osuCurrent.StrainTime;
+
+            TotalObjectStrain += strainValue + CurrentStrain;
+
+            return strainValue;
         }
     }
 }

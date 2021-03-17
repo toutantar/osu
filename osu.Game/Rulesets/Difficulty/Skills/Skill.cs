@@ -16,7 +16,6 @@ namespace osu.Game.Rulesets.Difficulty.Skills
     /// </summary>
     public abstract class Skill
     {
-        private const double difficulty_spike_factor = 1.2;
         /// <summary>
         /// The peak strain for each <see cref="DifficultyCalculator.SectionLength"/> section of the beatmap.
         /// </summary>
@@ -42,11 +41,6 @@ namespace osu.Game.Rulesets.Difficulty.Skills
         /// <see cref="DifficultyHitObject"/>s that were processed previously. They can affect the strain values of the following objects.
         /// </summary>
         protected readonly LimitedCapacityStack<DifficultyHitObject> Previous = new LimitedCapacityStack<DifficultyHitObject>(2); // Contained objects not used yet
-
-        /// <summary>
-        /// The total aggregated strain amount.
-        /// </summary>
-        public double TotalStrain { get; private set; }
 
         /// <summary>
         /// The current strain level.
@@ -90,10 +84,6 @@ namespace osu.Game.Rulesets.Difficulty.Skills
             if (Previous.Count > 0)
                 strainPeaks.Add(currentSectionPeak);
         }
-        public void StorePeak(double sectionPeak)
-        {
-            strainPeaks.Add(sectionPeak);
-        }
 
         /// <summary>
         /// Sets the initial strain level for a new section.
@@ -121,18 +111,15 @@ namespace osu.Game.Rulesets.Difficulty.Skills
         {
             double difficulty = 0;
             double weight = 1;
-            double total = 0;
 
             // Difficulty is the weighted sum of the highest strains from every section.
             // We're sorting from highest to lowest strain.
             foreach (double strain in strainPeaks.OrderByDescending(d => d))
             {
-                total += Math.Pow(strain, difficulty_spike_factor);
                 difficulty += strain * weight;
                 weight *= DecayWeight;
             }
 
-            TotalStrain = total;
             return difficulty;
         }
 

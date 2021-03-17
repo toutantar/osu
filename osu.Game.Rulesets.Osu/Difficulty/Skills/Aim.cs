@@ -13,14 +13,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     /// <summary>
     /// Represents the skill required to correctly aim at every object in the map with a uniform CircleSize and normalized distances.
     /// </summary>
-    public class Aim : Skill
+    public class Aim : OsuSkill
     {
         private const double angle_bonus_begin = Math.PI / 3;
         private const double timing_threshold = 107;
 
         private const double control_spacing_scale = 3.5;
 
-        private const double flow_factor = 0.125;
+        private const double flow_factor = 0.135;
 
         private const double repeatjump_min_spacing = 3 * 52;
         private const double repeatjump_max_spacing = 6 * 52;
@@ -79,7 +79,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double flowBonus = 1.0 / (1.0 + Math.Pow(Math.E, osuCurrent.StrainTime - 86.0)) * flow_factor;
 
-            return (1.0 - repeatJumpPenalty) * aimValue * (1.0 + flowBonus);
+            double strainValue = (1.0 - repeatJumpPenalty) * aimValue * (1.0 + flowBonus);
+
+            TotalObjectStrain += strainValue + CurrentStrain;
+
+            return strainValue;
         }
 
         private double calculateControlBonus(OsuDifficultyHitObject osuCurrent, OsuDifficultyHitObject osuPrevious)
