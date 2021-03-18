@@ -78,10 +78,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.045;
 
             //length bonus
-            double aimLengthBonus = 1.0 + 0.6 * Math.Min(1.0, aimTotal / 2000.0) +
-                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.7 : 0.0);
+            double aimLengthBonus = 1.0 + 0.5 * Math.Min(1.0, aimTotal / 2000.0) +
+                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.25 : 0.0);
             double speedLengthBonus = 1.0 + 0.2 * Math.Min(1.0, speedTotal / 2000.0) +
-                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.3 : 0.0);
+                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.1 : 0.0);
 
             totalAimBonus += Math.Pow(aimLengthBonus, 0.33);
             totalSpeedBonus += Math.Pow(speedLengthBonus, 0.33);

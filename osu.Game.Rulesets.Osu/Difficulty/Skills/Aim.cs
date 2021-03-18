@@ -20,7 +20,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private const double control_spacing_scale = 3.5;
 
-        private const double flow_factor = 0.135;
+        private const double flow_factor = 0.2;
 
         private const double repeatjump_min_spacing = 3 * 52;
         private const double repeatjump_max_spacing = 6 * 52;
