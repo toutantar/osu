@@ -86,6 +86,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             double aimValue = Math.Pow(5.0 * Math.Max(1.0, rawAim / 0.0675) - 4.0, 3.0) / 100000.0;
 
+            int hitObjectCount = totalHits - Attributes.SpinnerCount;
+
             // Penalize misses by assessing # of misses relative to the total # of objects. Default a 3% reduction for any # of misses.
             if (countMiss > 0)
                 aimValue *= 0.97 * Math.Pow(1 - Math.Pow((double)countMiss / totalHits, 0.775), countMiss);
@@ -101,7 +103,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 approachRateFactor += 0.01 * (8.0 - Attributes.ApproachRate);
 
             double flashLightBonus = 1.0;
-            double approachRateBonus = 1.0 + Math.Min(approachRateFactor, approachRateFactor/3 + approachRateFactor/3 * 2 * (totalHits / 1000.0));
+            double approachRateBonus = 1.0 + Math.Min(approachRateFactor, approachRateFactor/3 + approachRateFactor/3 * 2 * (hitObjectCount / 1000.0));
 
             // We want to give more reward for lower AR when it comes to aim and HD. This nerfs high AR and buffs lower AR.
             if (mods.Any(h => h is OsuModHidden))
@@ -110,10 +112,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (mods.Any(h => h is OsuModFlashlight))
             {
                 // Apply object-based bonus for flashlight.
-                flashLightBonus = 1.0 + 0.3825 * Math.Min(1.0, Math.Pow(totalHits / 200.0, 1.75)) +
-                            (totalHits > 200
-                                ? 0.35 * Math.Min(1.0, (totalHits - 200) / 300.0) +
-                                  (totalHits > 500 ? (totalHits - 500) / 1200.0 : 0.0)
+                flashLightBonus = 1.0 + 0.375 * Math.Min(1.0, Math.Pow(hitObjectCount / 200.0, 1.75)) +
+                            (hitObjectCount > 200
+                                ? 0.25 * Math.Min(1.0, (hitObjectCount - 200) / 300.0) +
+                                  (hitObjectCount > 500 ? (hitObjectCount - 500) / 1500.0 : 0.0)
                                 : 0.0);
             }
 
@@ -178,6 +180,5 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         }
 
         private int totalHits => countGreat + countOk + countMeh + countMiss;
-        private int totalSuccessfulHits => countGreat + countOk + countMeh;
     }
 }
