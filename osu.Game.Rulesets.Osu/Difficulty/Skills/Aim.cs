@@ -20,7 +20,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private const double control_spacing_scale = 3.5;
 
-        private const double flow_factor = 0.2;
+        private const double flow_factor = 0.195;
+        private const double flow_angle_factor = 0.4;
+        private const double flow_angle_begin = 5 * Math.PI / 6;
 
         private const double repeatjump_min_spacing = 3 * 52;
         private const double repeatjump_max_spacing = 6 * 52;
@@ -42,6 +44,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double result = 0;
             double controlBonus = 0;
+            double flowAngleBonus = 1.0;
 
             if (Previous.Count > 0)
             {
@@ -56,6 +59,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                         * Math.Pow(Math.Sin(osuCurrent.Angle.Value - angle_bonus_begin), 2)
                         * Math.Max(osuCurrent.JumpDistance - scale, 0));
                     result = 1.5 * applyDiminishingExp(Math.Max(0, angleBonus)) / Math.Max(timing_threshold, osuPrevious.StrainTime);
+
+
+
+                    double flowAngleDistanceScaling = Math.Min(osuCurrent.JumpDistance / 90.0, 1.0) * Math.Min(osuPrevious.JumpDistance / 90.0, 1.0);
+                    flowAngleBonus = Math.Sin(1.5 * (flow_angle_begin - Math.Max(Math.PI / 2, osuCurrent.Angle.Value)));
+                    flowAngleBonus = 1.0 + Math.Max(0, flowAngleBonus) * flowAngleDistanceScaling * flow_angle_factor;
                 }
 
                 controlBonus = calculateControlBonus(osuCurrent, osuPrevious);
@@ -77,7 +86,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 (Math.Sqrt(travelDistanceExp * jumpDistanceExp) + jumpDistanceExp + travelDistanceExp) / osuCurrent.StrainTime
             ) + controlBonus;
 
-            double flowBonus = 1.0 / (1.0 + Math.Pow(Math.E, osuCurrent.StrainTime - 86.0)) * flow_factor;
+            double distanceOffset = Math.Pow(jumpDistanceExp + travelDistanceExp, 1.7) / 400;
+            double flowBonus = 1.0 / (1.0 + Math.Pow(Math.E, osuCurrent.StrainTime - 126.0 + distanceOffset)) * flow_factor * flowAngleBonus;
 
             double strainValue = (1.0 - repeatJumpPenalty) * aimValue * (1.0 + flowBonus);
 
