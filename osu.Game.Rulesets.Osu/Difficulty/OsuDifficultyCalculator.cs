@@ -37,10 +37,25 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             {
                 aimDifficulty = skills[0].StrainPeaks[i];
                 speedDifficulty = skills[1].StrainPeaks[i];
-                combinedBonuses.Add(aimDifficulty * speedDifficulty / 3600);
+                combinedBonuses.Add(aimDifficulty * speedDifficulty / 7200);
             }
 
             return combinedBonuses;
+        }
+
+        private double calculateMixedAimBonus(SnapAim snapAim, FlowAim flowAim)
+        {
+            double flowDifficulty = flowAim.DifficultyValue();
+            double snapDifficulty = snapAim.DifficultyValue();
+
+            double flowRating = difficulty_multiplier * Math.Sqrt(flowDifficulty) * 1.1;
+            double snapRating = difficulty_multiplier * Math.Sqrt(snapDifficulty);
+
+            double difference = Math.Abs(flowRating - snapRating) / Math.Max(flowRating, snapRating);
+
+            double mixedAimBonus = Math.Max(0, - Math.Pow(difference * 3.0, 1.2) + 1.0);
+
+            return mixedAimBonus * 0.025;
         }
 
         protected override DifficultyAttributes CreateDifficultyAttributes(IBeatmap beatmap, Mod[] mods, Skill[] skills, double clockRate)
@@ -51,37 +66,41 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             List<double> combinedBonuses = calculateCombinedBonuses(skills);
             int totalHits = beatmap.HitObjects.Count(h => h is HitCircle || h is Slider);
 
-            //bit of a discrepancy here because the combined bonus is not taken into account
-            double aimTotal = (skills[0] as OsuSkill).LengthValue(totalHits) * 1.6;
-            double speedTotal = (skills[1] as OsuSkill).LengthValue(totalHits) * 1.6;
+            Aim aimSkill = skills[0] as Aim;
+            Speed speedSkill = skills[1] as Speed;
 
-            double aimDifficulty = (skills[0] as OsuSkill).CombinedDifficultyValue(combinedBonuses);
-            double speedDifficulty = (skills[1] as OsuSkill).CombinedDifficultyValue(combinedBonuses);
+            //minor discrepancy here because the combined bonus is not taken into account for the length value
+            double aimTotal = aimSkill.LengthValue(totalHits) * 2;
+            double speedTotal = speedSkill.LengthValue(totalHits) * 2;
+
+            aimSkill.AddCombinedCorrection(combinedBonuses);
+            speedSkill.AddCombinedCorrection(combinedBonuses);
+
+            double aimDifficulty = aimSkill.CombinedDifficultyValue();
+            double speedDifficulty = speedSkill.CombinedDifficultyValue();
 
             double aimRating = Math.Sqrt(aimDifficulty);
             double speedRating = Math.Sqrt(speedDifficulty);
 
-            //We calculate the SR first to avoid unnecessary inflation, this should pose no problems as it is just a display value.
-            double starRating = difficulty_multiplier * (aimRating + speedRating + Math.Abs(aimRating - speedRating)) / 2;
-
             //consistency
-            double sigmoidScale = 6;
-            double strainCutoffPerc = 0.6;
-            double thresholdDistanceExp = 0.7;
-            double minConsistency = 19;
-            double maxConsistency = 38;
+            double totalAimBonus = Math.Pow(aimSkill.ConsistencyValue(aimDifficulty), 0.7) * 0.045
+                                            + calculateMixedAimBonus(skills[2] as SnapAim, skills[3] as FlowAim);
+            double totalSpeedBonus = Math.Pow(speedSkill.ConsistencyValue(speedDifficulty), 0.7) * 0.045;
 
-            double totalAimBonus = (skills[0] as OsuSkill).ConsistencyValue(aimRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
-            double totalSpeedBonus = (skills[1] as OsuSkill).ConsistencyValue(speedRating, sigmoidScale, strainCutoffPerc, thresholdDistanceExp, minConsistency, maxConsistency);
+            //calculate the SR first to avoid unnecessary inflation, this should pose no problems as it is just a display value
+            double displayAim = aimRating * (1.0 + totalAimBonus) * difficulty_multiplier;
+            double displaySpeed = speedRating * (1.0 + totalSpeedBonus) * difficulty_multiplier;
 
-            totalAimBonus = Math.Pow(totalAimBonus, 0.7) * 0.045;
-            totalSpeedBonus = Math.Pow(totalSpeedBonus, 0.7) * 0.045;
+            double starRating = (displayAim + displaySpeed + Math.Abs(displayAim - displaySpeed)) / 2;
 
             //length bonus
-            double aimLengthBonus = 1.0 + 0.5 * Math.Min(1.0, aimTotal / 2000.0) +
-                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.25 : 0.0);
-            double speedLengthBonus = 1.0 + 0.2 * Math.Min(1.0, speedTotal / 2000.0) +
-                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.1 : 0.0);
+            double aimDiffMultiplier = 1.0 + Math.Pow(aimRating, 1.3) / 9000;
+            aimTotal = Math.Pow(aimTotal, aimDiffMultiplier);
+
+            double aimLengthBonus = 1.0 + 0.41 * Math.Min(1.0, aimTotal / 2000.0) +
+                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.52 : 0.0);
+            double speedLengthBonus = 1.0 + 0.075 * Math.Min(1.0, speedTotal / 2000.0) +
+                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.09375 : 0.0);
 
             totalAimBonus += Math.Pow(aimLengthBonus, 0.33);
             totalSpeedBonus += Math.Pow(speedLengthBonus, 0.33);
@@ -135,7 +154,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         protected override Skill[] CreateSkills(IBeatmap beatmap, Mod[] mods) => new Skill[]
         {
             new Aim(mods),
-            new Speed(mods)
+            new Speed(mods),
+            new SnapAim(mods),
+            new FlowAim(mods)
         };
 
         protected override Mod[] DifficultyAdjustmentMods => new Mod[]

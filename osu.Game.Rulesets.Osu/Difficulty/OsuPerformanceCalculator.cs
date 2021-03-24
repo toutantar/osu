@@ -46,7 +46,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 return 0;
 
             // Custom multipliers for NoFail and SpunOut.
-            double multiplier = 1.12; // This is being adjusted to keep the final pp value scaled around what it used to be when changing things
+            double multiplier = 1.13; // This is being adjusted to keep the final pp value scaled around what it used to be when changing things
 
             if (mods.Any(m => m is OsuModNoFail))
                 multiplier *= Math.Max(0.90, 1.0 - 0.02 * countMiss);
@@ -112,9 +112,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (mods.Any(h => h is OsuModFlashlight))
             {
                 // Apply object-based bonus for flashlight.
-                flashLightBonus = 1.0 + 0.375 * Math.Min(1.0, Math.Pow(hitObjectCount / 200.0, 1.75)) +
+                flashLightBonus = 1.0 + 0.35 * Math.Min(1.0, Math.Pow(hitObjectCount / 200.0, 2)) +
                             (hitObjectCount > 200
-                                ? 0.25 * Math.Min(1.0, (hitObjectCount - 200) / 300.0) +
+                                ? 0.35 * Math.Min(1.0, (hitObjectCount - 200) / 300.0) +
                                   (hitObjectCount > 500 ? (hitObjectCount - 500) / 1500.0 : 0.0)
                                 : 0.0);
             }
@@ -142,7 +142,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
                 speedValue *= Math.Min(Math.Pow(scoreMaxCombo, 0.8) / Math.Pow(Attributes.MaxCombo, 0.8), 1.0);
 
             // Scale the speed value with accuracy and OD
-            speedValue *= (0.95 + Math.Pow(Attributes.OverallDifficulty, 2) / 750) * Math.Pow(accuracy, (14.5 - Math.Max(Attributes.OverallDifficulty, 8)) / 2);
+            speedValue *= (0.95 + Math.Pow(Attributes.OverallDifficulty, 2) / 800) * Math.Pow(accuracy, (13.9 - Math.Max(Attributes.OverallDifficulty, 8)) / 2);
+
             // Scale the speed value with # of 50s to punish doubletapping.
             speedValue *= Math.Pow(0.98, countMeh < totalHits / 500.0 ? 0 : countMeh - totalHits / 500.0);
 

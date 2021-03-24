@@ -45,12 +45,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             {
                 var osuPrevious = (OsuDifficultyHitObject)Previous[0];
                 double timingDistance = Math.Abs(osuCurrent.DeltaTime - osuPrevious.DeltaTime);
-                rhythmBonus = Math.Pow(Math.Min(Math.Max(timingDistance - 5.0, 0) / 10.0, 1.0), 2.0) * 0.1;
+                rhythmBonus = Math.Pow(Math.Min(Math.Max(timingDistance - 5.0, 0) / 10.0, 1.0), 2.0) * 0.11;
             }
 
             double strainValue = (1.0 + speedBonus + rhythmBonus) / osuCurrent.StrainTime;
 
-            TotalObjectStrain += strainValue + CurrentStrain;
+            AddTotalStrain(strainValue);
 
             return strainValue;
         }

@@ -10,7 +10,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 {
     public abstract class OsuSkill : Skill
     {
-        public double TotalObjectStrain { get; set; }
+        public double TotalObjectStrain { get; private set; }
 
         private List<double> combinedStrainPeaks = new List<double>();
 
@@ -18,15 +18,23 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
         }
 
-        public double CombinedDifficultyValue(List<double> combinedStrains)
+        protected void AddTotalStrain(double strainValue)
         {
-            double difficulty = 0;
-            double weight = 1;
+            TotalObjectStrain += strainValue + CurrentStrain;
+        }
 
-            for(int i = 0; i < StrainPeaks.Count; i++)
+        public void AddCombinedCorrection(List<double> combinedStrains)
+        {
+            for (int i = 0; i < StrainPeaks.Count; i++)
             {
                 combinedStrainPeaks.Add(StrainPeaks[i] + combinedStrains[i]);
             }
+        }
+
+        public double CombinedDifficultyValue()
+        {
+            double difficulty = 0;
+            double weight = 1;
 
             // Difficulty is the weighted sum of the highest strains from every section.
             // We're sorting from highest to lowest strain.
@@ -52,13 +60,21 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             return lengthTotal;
         }
 
-        public double ConsistencyValue(double baseRating, double sigmoidScale, double strainCutoffPerc, double thresholdDistanceExp, double minConsistency, double maxConsistency)
+        public double ConsistencyValue(double baseDifficulty)
         {
+            IEnumerable<double> strains = combinedStrainPeaks.Count == 0 ? StrainPeaks : combinedStrainPeaks;
+
+            double sigmoidScale = 6;
+            double strainCutoffPerc = 0.6;
+            double thresholdDistanceExp = 0.7;
+            double minConsistency = 19;
+            double maxConsistency = 38;
+
             double difficulty = 0;
             double weight = 1;
 
             double seriesFactor = -1 / (DecayWeight - 1);
-            double baseStrain = Math.Pow(baseRating, 2) / seriesFactor;
+            double baseStrain = baseDifficulty / seriesFactor;
 
             double upperRange = baseStrain * (1.0 - strainCutoffPerc);
             double bottomRange = baseStrain * strainCutoffPerc;
@@ -67,7 +83,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double thresholdDistanceFactor;
 
             int x = 0;
-            foreach (double strain in combinedStrainPeaks.OrderByDescending(d => d))
+            foreach (double strain in strains.OrderByDescending(d => d))
             {
                 cutoffStrain = Math.Clamp(strain - bottomRange, 0, upperRange);
                 thresholdDistanceFactor = Math.Pow(cutoffStrain / upperRange, thresholdDistanceExp);

@@ -20,8 +20,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private const double control_spacing_scale = 3.5;
 
-        private const double flow_factor = 0.195;
-        private const double flow_angle_factor = 0.4;
+        private const double flow_factor = 0.21;
+        private const double flow_angle_factor = 0.425;
         private const double flow_angle_begin = 5 * Math.PI / 6;
 
         private const double repeatjump_min_spacing = 3 * 52;
@@ -40,6 +40,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             if (current.BaseObject is Spinner)
                 return 0;
 
+            (double snapAim, double flowAim) = CalculateAimValues(current);
+
+            double strainValue = snapAim + flowAim;
+
+            AddTotalStrain(strainValue);
+
+            return strainValue;
+        }
+
+        protected (double snapAim, double flowAim) CalculateAimValues(DifficultyHitObject current)
+        {
             var osuCurrent = (OsuDifficultyHitObject)current;
 
             double result = 0;
@@ -87,24 +98,24 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             ) + controlBonus;
 
             double distanceOffset = Math.Pow(jumpDistanceExp + travelDistanceExp, 1.7) / 400;
-            double flowBonus = 1.0 / (1.0 + Math.Pow(Math.E, osuCurrent.StrainTime - 126.0 + distanceOffset)) * flow_factor * flowAngleBonus;
+            double flowAmount = 1.0 / (1.0 + Math.Pow(Math.E, osuCurrent.StrainTime - 126.0 + distanceOffset));
+            double flowBonus = flowAmount * flow_factor * flowAngleBonus;
 
-            double strainValue = (1.0 - repeatJumpPenalty) * aimValue * (1.0 + flowBonus);
+            aimValue *= (1.0 - repeatJumpPenalty);
+            aimValue *= (1.0 + flowBonus);
 
-            TotalObjectStrain += strainValue + CurrentStrain;
-
-            return strainValue;
+            return (aimValue * (1.0 - flowAmount), aimValue * flowAmount);
         }
 
         private double calculateControlBonus(OsuDifficultyHitObject osuCurrent, OsuDifficultyHitObject osuPrevious)
         {
-            var prevCursSpeed = Math.Max(1, applyDiminishingExp(osuPrevious.JumpDistance) / osuPrevious.StrainTime * control_spacing_scale);
-            var curCursSpeed = Math.Max(1, applyDiminishingExp(osuCurrent.JumpDistance) / osuCurrent.StrainTime * control_spacing_scale);
+            var prevCursSpeed = Math.Max(1, osuPrevious.JumpDistance / osuPrevious.StrainTime * control_spacing_scale);
+            var curCursSpeed = Math.Max(1, osuCurrent.JumpDistance / osuCurrent.StrainTime * control_spacing_scale);
 
             var speedRatio = Math.Max(prevCursSpeed / curCursSpeed, curCursSpeed / prevCursSpeed);
 
-            var speedChange = applyDiminishingExp(Math.Pow(speedRatio, 2.5)) / (osuCurrent.StrainTime + osuPrevious.StrainTime);
-            return speedChange * osuCurrent.JumpDistance / 1500;
+            var speedChange = Math.Pow(speedRatio, 2.5) / (osuCurrent.StrainTime + osuPrevious.StrainTime);
+            return speedChange * osuCurrent.JumpDistance / 1600;
         }
 
         private double calculateRepeatJumpPenalty(OsuDifficultyHitObject osuCurrent)
