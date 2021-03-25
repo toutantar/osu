@@ -23,11 +23,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             TotalObjectStrain += strainValue + CurrentStrain;
         }
 
-        public void AddCombinedCorrection(List<double> combinedStrains)
+        public void AddCombinedCorrection(List<double> combinedStrains, Skill otherSkill = null)
         {
+            double otherStrain = 0;
             for (int i = 0; i < StrainPeaks.Count; i++)
             {
-                combinedStrainPeaks.Add(StrainPeaks[i] + combinedStrains[i]);
+                if (otherSkill != null)
+                    otherStrain = otherSkill.StrainPeaks[i];
+                combinedStrainPeaks.Add(Math.Max(StrainPeaks[i], otherStrain) + combinedStrains[i]);
             }
         }
 

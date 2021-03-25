@@ -36,8 +36,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             for (int i = 0; i < skills[0].StrainPeaks.Count; i++)
             {
                 aimDifficulty = skills[0].StrainPeaks[i];
-                speedDifficulty = skills[1].StrainPeaks[i];
-                combinedBonuses.Add(aimDifficulty * speedDifficulty / 7200);
+                speedDifficulty = Math.Max(skills[1].StrainPeaks[i], skills[4].StrainPeaks[i]);
+
+                combinedBonuses.Add(aimDifficulty * speedDifficulty / 14400);
             }
 
             return combinedBonuses;
@@ -48,12 +49,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double flowDifficulty = flowAim.DifficultyValue();
             double snapDifficulty = snapAim.DifficultyValue();
 
-            double flowRating = difficulty_multiplier * Math.Sqrt(flowDifficulty) * 1.1;
+            double flowRating = difficulty_multiplier * Math.Sqrt(flowDifficulty) * 1.05;
             double snapRating = difficulty_multiplier * Math.Sqrt(snapDifficulty);
 
             double difference = Math.Abs(flowRating - snapRating) / Math.Max(flowRating, snapRating);
 
-            double mixedAimBonus = Math.Max(0, - Math.Pow(difference * 3.0, 1.2) + 1.0);
+            double mixedAimBonus = Math.Max(0, - Math.Pow(difference * 4.0, 1.5) + 1.0);
 
             return mixedAimBonus * 0.025;
         }
@@ -74,7 +75,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double speedTotal = speedSkill.LengthValue(totalHits) * 2;
 
             aimSkill.AddCombinedCorrection(combinedBonuses);
-            speedSkill.AddCombinedCorrection(combinedBonuses);
+            speedSkill.AddCombinedCorrection(combinedBonuses, skills[4]);
 
             double aimDifficulty = aimSkill.CombinedDifficultyValue();
             double speedDifficulty = speedSkill.CombinedDifficultyValue();
@@ -91,16 +92,16 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double displayAim = aimRating * (1.0 + totalAimBonus) * difficulty_multiplier;
             double displaySpeed = speedRating * (1.0 + totalSpeedBonus) * difficulty_multiplier;
 
-            double starRating = (displayAim + displaySpeed + Math.Abs(displayAim - displaySpeed)) / 2;
+            double starRating = displayAim + displaySpeed + Math.Abs(displayAim - displaySpeed) / 2;
 
             //length bonus
-            double aimDiffMultiplier = 1.0 + Math.Pow(aimRating, 1.3) / 9000;
+            double aimDiffMultiplier = 1.0 + Math.Pow(aimRating, 1.5) / 15000;
             aimTotal = Math.Pow(aimTotal, aimDiffMultiplier);
 
-            double aimLengthBonus = 1.0 + 0.41 * Math.Min(1.0, aimTotal / 2000.0) +
-                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.52 : 0.0);
-            double speedLengthBonus = 1.0 + 0.075 * Math.Min(1.0, speedTotal / 2000.0) +
-                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.09375 : 0.0);
+            double aimLengthBonus = 1.0 + 0.36 * Math.Min(1.0, aimTotal / 2000.0) +
+                                 (aimTotal > 2000 ? Math.Log10(aimTotal / 2000.0) * 0.48 : 0.0);
+            double speedLengthBonus = 1.0 + 0.1 * Math.Min(1.0, speedTotal / 2000.0) +
+                                 (speedTotal > 2000 ? Math.Log10(speedTotal / 2000.0) * 0.2 : 0.0);
 
             totalAimBonus += Math.Pow(aimLengthBonus, 0.33);
             totalSpeedBonus += Math.Pow(speedLengthBonus, 0.33);
@@ -156,7 +157,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             new Aim(mods),
             new Speed(mods),
             new SnapAim(mods),
-            new FlowAim(mods)
+            new FlowAim(mods),
+            new Stamina(mods)
         };
 
         protected override Mod[] DifficultyAdjustmentMods => new Mod[]

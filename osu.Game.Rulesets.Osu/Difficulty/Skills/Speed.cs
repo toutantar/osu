@@ -2,6 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Skills;
 using osu.Game.Rulesets.Mods;
@@ -15,7 +17,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     /// </summary>
     public class Speed : OsuSkill
     {
-        protected override double SkillMultiplier => 1400;
+        protected override double SkillMultiplier => 1320;
         protected override double StrainDecayBase => 0.3;
 
         private const double min_speed_bonus = 75; // ~200BPM
@@ -38,7 +40,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double speedBonus = 0;
             if (deltaTime < min_speed_bonus)
-                speedBonus = Math.Pow((min_speed_bonus - deltaTime) / speed_balancing_factor, 2) * 0.7;
+                speedBonus = Math.Pow((min_speed_bonus - deltaTime) / speed_balancing_factor, 2) * 0.8;
 
             double rhythmBonus = 0;
             if (Previous.Count > 0)
@@ -50,9 +52,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double strainValue = (1.0 + speedBonus + rhythmBonus) / osuCurrent.StrainTime;
 
+            double estimatedPeakStrain = CalculateEstimatedPeakStrain(osuCurrent.StrainTime);
+            double burstBonus = (1.0 - Math.Min(1.0, CurrentStrain / estimatedPeakStrain)) / osuCurrent.StrainTime * 10;
+
+            strainValue *= (1.0 + burstBonus);
+
             AddTotalStrain(strainValue);
 
             return strainValue;
+        }
+
+        protected virtual double CalculateEstimatedPeakStrain(double strainTime)
+        {
+            return Math.Pow(1320 / strainTime, 1.8) + Math.Pow(195 / strainTime, 3.82);
         }
     }
 }
