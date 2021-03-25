@@ -20,8 +20,8 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         private const double control_spacing_scale = 3.5;
 
-        private const double flow_factor = 0.21;
-        private const double flow_angle_factor = 0.425;
+        private const double flow_factor = 0.25;
+        private const double flow_angle_factor = 1.0;
         private const double flow_angle_begin = 5 * Math.PI / 6;
 
         private const double repeatjump_min_spacing = 3 * 52;
@@ -69,11 +69,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                         Math.Max(osuPrevious.JumpDistance - scale, 0)
                         * Math.Pow(Math.Sin(osuCurrent.Angle.Value - angle_bonus_begin), 2)
                         * Math.Max(osuCurrent.JumpDistance - scale, 0));
-                    result = 1.5 * applyDiminishingExp(Math.Max(0, angleBonus)) / Math.Max(timing_threshold, osuPrevious.StrainTime);
+                    result = 1.475 * applyDiminishingExp(Math.Max(0, angleBonus)) / Math.Max(timing_threshold, osuPrevious.StrainTime);
 
 
 
-                    double flowAngleDistanceScaling = Math.Min(osuCurrent.JumpDistance / 90.0, 1.0) * Math.Min(osuPrevious.JumpDistance / 90.0, 1.0);
+                    double flowAngleDistanceScaling = Math.Min(Math.Max(0, osuCurrent.JumpDistance - 90) / 14.0, 1.0)
+                                                        * Math.Min(Math.Max(0, osuPrevious.JumpDistance - 90) / 14.0, 1.0);
                     flowAngleBonus = Math.Sin(1.5 * (flow_angle_begin - Math.Max(Math.PI / 2, osuCurrent.Angle.Value)));
                     flowAngleBonus = 1.0 + Math.Max(0, flowAngleBonus) * flowAngleDistanceScaling * flow_angle_factor;
                 }
@@ -134,7 +135,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double scaledStartDistance = jumpScale * start_distance;
             double innerDistance = Math.Max(scaledStartDistance - (double)osuCurrent.LastDistance, 0) / scaledStartDistance;
 
-            return innerDistance * spacingScale * 0.1;
+            return innerDistance * spacingScale * 0.065;
         }
 
         private double applyDiminishingExp(double val) => Math.Pow(val, 0.99);
