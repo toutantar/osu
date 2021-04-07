@@ -37,6 +37,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
         /// </summary>
         public readonly double StrainTime;
 
+        public double? LastDistance { get; private set; }
+
+        public double? OverlapScaling { get; private set; }
+
+
         private readonly OsuHitObject lastLastObject;
         private readonly OsuHitObject lastObject;
 
@@ -86,6 +91,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
                 float det = v1.X * v2.Y - v1.Y * v2.X;
 
                 Angle = Math.Abs(Math.Atan2(det, dot));
+
+                LastDistance = (BaseObject.StackedPosition * scalingFactor - lastLastCursorPosition * scalingFactor).Length;
+                OverlapScaling = calculateOverlapScaling();
             }
         }
 
@@ -123,6 +131,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Preprocessing
             var scoringTimes = slider.NestedHitObjects.Skip(1).Select(t => t.StartTime);
             foreach (var time in scoringTimes)
                 computeVertex(time);
+        }
+
+        private double calculateOverlapScaling()
+        {
+            const double diameter = normalized_radius * 2 + 1;
+            double lastOverlapAmount = 1 - Math.Min(1, (double)LastDistance / diameter);
+            double currentOverlapAmount = 1 - Math.Min(1, (double)JumpDistance / diameter);
+
+            double overlapNerf = lastOverlapAmount * Math.Min(0.1, currentOverlapAmount) * 10;
+
+            return (1 - overlapNerf);
         }
 
         private Vector2 getEndCursorPosition(OsuHitObject hitObject)

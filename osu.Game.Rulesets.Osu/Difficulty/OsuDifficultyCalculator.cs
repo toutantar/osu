@@ -27,13 +27,94 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         {
         }
 
+        private double calculateMixedAimBonus(SnapAim snapAim, FlowAim flowAim)
+        {
+            /*double flowDifficulty = flowAim.DifficultyValue();
+            double snapDifficulty = snapAim.DifficultyValue();
+
+            double flowConsistency = flowAim.ConsistentDifficultyValue(flowDifficulty);
+            double snapConsistency = snapAim.ConsistentDifficultyValue(snapDifficulty);
+
+            double flowRating = difficulty_multiplier * Math.Sqrt(flowDifficulty) * Math.Pow(Math.Log10(1 + flowConsistency / 4), 0.1);
+            double snapRating = difficulty_multiplier * Math.Sqrt(snapDifficulty) * Math.Pow(Math.Log10(1 + snapConsistency / 4), 0.1);
+
+            double difference = Math.Abs(flowRating - snapRating) / Math.Max(flowRating, snapRating);
+
+            double mixedAimBonus = Math.Max(0, -Math.Pow(difference * 3.0, 1.5) + 1.0);
+
+            return 1.0 + mixedAimBonus * 0.03;*/
+
+            double flowDifficulty = flowAim.DifficultyValue();
+            double snapDifficulty = snapAim.DifficultyValue();
+
+            double flowRating = difficulty_multiplier * Math.Sqrt(flowDifficulty);
+            double snapRating = difficulty_multiplier * Math.Sqrt(snapDifficulty);
+
+
+            double lpExp = 3.0;
+
+            double mixedValue =
+                Math.Pow(
+                    Math.Pow(flowRating, lpExp) +
+                    Math.Pow(snapRating, lpExp), 1.0 / lpExp
+                );
+
+            //Console.WriteLine(mixedValue);
+
+            //mixedValue = (flowRating + snapRating) / 2.0;
+            //Console.WriteLine(mixedValue);
+
+            Console.WriteLine("flow " + flowRating);
+            Console.WriteLine("snap " + snapRating);
+            Console.WriteLine("mixed " + mixedValue);
+
+            return mixedValue; // - Math.Max(flowRating, snapRating)
+        }
+
         protected override DifficultyAttributes CreateDifficultyAttributes(IBeatmap beatmap, Mod[] mods, Skill[] skills, double clockRate)
         {
             if (beatmap.HitObjects.Count == 0)
                 return new OsuDifficultyAttributes { Mods = mods, Skills = skills };
 
+            (skills[1] as Speed).MergeStrainPeaks(skills[4]);
+
+            /*foreach (double strain in skills[0].StrainPeaks)
+                Console.WriteLine(strain.ToString(System.Globalization.CultureInfo.InvariantCulture));*/
+            Console.WriteLine(beatmap.Metadata.Title);
+
+
             double aimRating = Math.Sqrt(skills[0].DifficultyValue()) * difficulty_multiplier;
-            double speedRating = Math.Sqrt(skills[1].DifficultyValue()) * difficulty_multiplier;
+            double speedRating = Math.Sqrt((skills[1] as OsuSkill).OsuDifficultyValue()) * difficulty_multiplier;
+
+            double mixedRating = calculateMixedAimBonus(skills[2] as SnapAim, skills[3] as FlowAim);
+
+            Console.WriteLine("aim " + aimRating);
+            //Console.WriteLine(mixedRating);
+
+            //aimRating = (aimRating + mixedRating) / 2.0;
+
+            /*aimRating =
+                Math.Pow(
+                    Math.Pow(aimRating, 3.0) +
+                    Math.Pow(mixedRating, 3.0), 1.0 / 3.0
+                );*/
+
+            //lp_sum( (lp_sum(flow, snap) - combined), combined)
+
+            /*Console.WriteLine(aimRating);
+
+            aimRating =
+                Math.Pow(
+                    Math.Pow(Math.Max(0, mixedRating), 9) +
+                    Math.Pow(aimRating, 9), 1.0 / 9
+                );
+
+            Console.WriteLine(aimRating);*/
+
+            //aimRating = mixedRating;
+
+            //Console.WriteLine((aimRating/asd).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
             double starRating = aimRating + speedRating + Math.Abs(aimRating - speedRating) / 2;
 
             HitWindows hitWindows = new OsuHitWindows();
@@ -65,6 +146,17 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             };
         }
 
+        public override void ProcessSkills(Skill[] skills, DifficultyHitObject h)
+        {
+            foreach(Skill skill in skills)
+            {
+                if (skill is Aim)
+                    (skill as Aim).TappingStrain = Math.Max(skills[1].CurrentStrain, skills[4].CurrentStrain);
+            }
+
+            base.ProcessSkills(skills, h);
+        }
+
         protected override IEnumerable<DifficultyHitObject> CreateDifficultyHitObjects(IBeatmap beatmap, double clockRate)
         {
             // The first jump is formed by the first two hitobjects of the map.
@@ -82,7 +174,10 @@ namespace osu.Game.Rulesets.Osu.Difficulty
         protected override Skill[] CreateSkills(IBeatmap beatmap, Mod[] mods) => new Skill[]
         {
             new Aim(mods),
-            new Speed(mods)
+            new Speed(mods),
+            new SnapAim(mods),
+            new FlowAim(mods),
+            new Stamina(mods)
         };
 
         protected override Mod[] DifficultyAdjustmentMods => new Mod[]
