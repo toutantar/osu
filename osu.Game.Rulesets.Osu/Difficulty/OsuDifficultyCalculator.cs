@@ -66,7 +66,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
 
             Console.WriteLine("flow " + flowRating);
             Console.WriteLine("snap " + snapRating);
-            Console.WriteLine("mixed " + mixedValue);
+            //Console.WriteLine("mixed " + mixedValue);
 
             return mixedValue; // - Math.Max(flowRating, snapRating)
         }

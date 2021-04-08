@@ -23,10 +23,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             TotalObjectStrain += strainValue + CurrentStrain;
         }
 
-        protected double GetFlowProbability(double deltaTime, double distance)
+        protected double GetFlowProbability(double deltaTime, double distance, double angle)
         {
-            double distanceOffset = Math.Pow(distance, 1.7) / 400;
-            return 1.0 / (1.0 + Math.Pow(Math.E, deltaTime - 126.0 + distanceOffset));
+            angle = Math.Clamp(angle, Math.PI / 6, Math.PI / 2);
+            double angleOffset = 10.0 * Math.Sin(1.5 * (Math.PI / 2 - angle));
+
+            double distanceOffset = Math.Pow(distance, 1.7) / 325;
+            return 1.0 / (1.0 + Math.Pow(Math.E, deltaTime - 126.0 + distanceOffset + angleOffset));
         }
 
         public void MergeStrainPeaks(Skill otherSkill)

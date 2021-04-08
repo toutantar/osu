@@ -58,7 +58,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             double jumpDistanceExp = ApplyDiminishingExp(osuCurrent.JumpDistance);
             double travelDistanceExp = ApplyDiminishingExp(osuCurrent.TravelDistance);
 
-            double flowAmount = GetFlowProbability(osuCurrent.StrainTime, jumpDistanceExp + travelDistanceExp);
+            double angle = 0;
+            if (osuCurrent.Angle != null)
+                angle = osuCurrent.Angle.Value;
+
+            double flowAmount = GetFlowProbability(osuCurrent.StrainTime, jumpDistanceExp + travelDistanceExp, angle);
             double snapAmount = 1.0 - flowAmount;
             double baseStrain = flowAmount + snapAmount * 2.5;
 

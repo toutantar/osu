@@ -107,7 +107,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             aimValue *= (1.0 - repeatJumpPenalty);
 
-            double flowProb = GetFlowProbability(osuCurrent.StrainTime, jumpDistanceExp + travelDistanceExp);
+            double angle = 0;
+            if (osuCurrent.Angle != null)
+                angle = osuCurrent.Angle.Value;
+
+            double flowProb = GetFlowProbability(osuCurrent.StrainTime, jumpDistanceExp + travelDistanceExp, angle);
             //double flowBonus = flowProb * flow_factor * flowAngleBonus;
 
             double flowAim = (Math.Pow(aimValue, flow_exp) * flowAngleBonus * flow_factor + tapCorrection) * flowProb;
