@@ -22,13 +22,14 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         protected override double baseDecay => 0.75;
 
         private double currStrain = 1;
-        private double distanceConstant = 3.5;
+        private double distanceConstant = 4;//3.5;
 
         // Global Constants for the different types of aim.
         private double snapStrainMultiplier = 23.727;
-        private double flowStrainMultiplier = 30.727;
+        private double flowStrainMultiplier = 42.727;
+        private double hybridStrainMultiplier = 32.727;
         private double sliderStrainMultiplier = 75;
-        private double totalStrainMultiplier = .1675;
+        private double totalStrainMultiplier = .1275;
 
         public Aim(Mod[] mods)
             : base(mods)
@@ -43,22 +44,11 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         {
             double strain = 0;
 
-            var observedDistance = Vector2.Subtract(currVector, Vector2.Multiply(prevVector, (float)0.1));
+            var observedDistance = Vector2.Subtract(currVector, Vector2.Multiply(prevVector, (float)0.05));
 
-            double prevAngularMomentumChange = Math.Abs(osuCurrObj.Angle * currVector.Length - osuPrevObj.Angle * prevVector.Length);
-            double nextAngularMomentumChange = Math.Abs(osuCurrObj.Angle * currVector.Length - osuNextObj.Angle * nextVector.Length);
+            strain = osuCurrObj.FlowProbability * observedDistance.Length;
 
-            double angularMomentumChange = Math.Sqrt(Math.Min(currVector.Length, prevVector.Length) * Math.Abs(nextAngularMomentumChange - prevAngularMomentumChange) / (2 * Math.PI));
-            // buff for changes in angular momentum, but only if the momentum change doesnt equal the previous.
-
-            double momentumChange = Math.Sqrt(Math.Max(0, prevVector.Length - currVector.Length) * Math.Min(currVector.Length, prevVector.Length));
-            // reward for accelerative changes in momentum
-
-            strain = osuCurrObj.FlowProbability * (observedDistance.Length
-                                                    + Math.Max(momentumChange * (0.5 + 0.5 * osuPrevObj.FlowProbability),
-                                                      angularMomentumChange * osuPrevObj.FlowProbability));
-
-            strain *= Math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 10) , osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 10));
+            // strain *= Math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 10) , osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 10));
             // buff high BPM slightly.
 
             return strain;
@@ -91,6 +81,32 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             strain = observedDistance.Length * osuCurrObj.SnapProbability;
 
             strain *= Math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 20) , osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 20));
+            // buff high BPM slightly.
+
+            return strain;
+        }
+
+        /// <summary>
+        /// Calculates the difficulty to flow from the previous <see cref="OsuDifficultyHitObject"/> the current <see cref="OsuDifficultyHitObject"/> with context to odd patterns.
+        /// </summary>
+        private double hybridStrainAt(OsuDifficultyHitObject osuPrevObj, OsuDifficultyHitObject osuCurrObj, OsuDifficultyHitObject osuNextObj,
+                                      Vector2 prevVector, Vector2 currVector, Vector2 nextVector)
+        {
+            double strain = 0;
+
+            double prevAngularMomentumChange = Math.Abs(osuCurrObj.Angle * currVector.Length - osuPrevObj.Angle * prevVector.Length);
+            double nextAngularMomentumChange = Math.Abs(osuCurrObj.Angle * currVector.Length - osuNextObj.Angle * nextVector.Length);
+
+            double angularMomentumChange = Math.Sqrt(Math.Min(currVector.Length, prevVector.Length) * Math.Abs(nextAngularMomentumChange - prevAngularMomentumChange) / (2 * Math.PI));
+            // buff for changes in angular momentum, but only if the momentum change doesnt equal the previous.
+
+            double momentumChange = Math.Sqrt(Math.Max(0, prevVector.Length - currVector.Length) * Math.Min(currVector.Length, prevVector.Length));
+            // reward for accelerative changes in momentum
+
+            strain = osuCurrObj.FlowProbability * (Math.Max(momentumChange * (0.5 + 0.5 * osuPrevObj.FlowProbability),
+                                                   angularMomentumChange * osuPrevObj.FlowProbability));
+
+            strain *= Math.Min(osuCurrObj.StrainTime / (osuCurrObj.StrainTime - 10) , osuPrevObj.StrainTime / (osuPrevObj.StrainTime - 10));
             // buff high BPM slightly.
 
             return strain;
@@ -140,6 +156,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                                                  currVector,
                                                  nextVector);
 
+                double hybridStrain = hybridStrainAt(osuPrevObj,
+                                                     osuCurrObj,
+                                                     osuNextObj,
+                                                     prevVector,
+                                                     currVector,
+                                                     nextVector);
+
                 double sliderStrain = sliderStrainAt(osuPrevObj,
                                                      osuCurrObj,
                                                      osuNextObj);
@@ -148,6 +171,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 currStrain *= computeDecay(baseDecay, osuCurrent.StrainTime);
                 currStrain += snapStrain * snapStrainMultiplier;
                 currStrain += flowStrain * flowStrainMultiplier;
+                currStrain += hybridStrain * hybridStrainMultiplier;
                 currStrain += sliderStrain * sliderStrainMultiplier;
 
                 strain = totalStrainMultiplier * currStrain;

@@ -15,9 +15,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     public abstract class OsuSkill : Skill
     {
         private readonly List<double> strains = new List<double>();
-        private readonly List<double> times = new List<double>();
-        private double target_fc_precision = 0.01;
-        private double target_fc_time = 30 * 60 * 1000; // estimated time it takes us to FC (30 minutes)
 
         protected virtual int decayExcessThreshold => 500;
         protected virtual double baseDecay => .75;
@@ -55,7 +52,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         protected override void Process(DifficultyHitObject current)
         {
             strains.Add(strainValueAt(current));
-            times.Add(current.StartTime);
         }
 
         /// <summary>
@@ -99,76 +95,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         public override double DifficultyValue()
         {
-            return fcTimeSkillLevel(calculateDifficultyValue());
-        }
-
-        /// <summary>
-        /// The probability a player of the given skill full combos a map of the given difficulty.
-        /// </summary>
-        /// <param name="skill">The skill level of the player.</param>
-        /// <param name="difficulty">The difficulty of a range of notes.</param>
-        private double fcProbability(double skill, double difficulty) => Math.Exp(-Math.Pow(difficulty / Math.Max(1e-10, skill), difficultyExponent));
-
-
-        /// <summary>
-        /// Approximates the skill level of a player that can FC a map with the given <paramref name="difficulty"/>,
-        /// if their probability of success in doing so is equal to <paramref name="probability"/>.
-        /// </summary>
-        private double skillLevel(double probability, double difficulty) => difficulty * Math.Pow(-Math.Log(probability), -1 / difficultyExponent);
-
-        /// <summary>
-        /// Approximates the amount of time spent straining during the beatmap. Used for scaling expected target time
-        /// </summary>
-        private double expectedTargetTime(double totalDifficulty)
-        {
-            double targetTime = 0;
-
-            for (int i=1;i<strains.Count;i++)
-            {
-                targetTime += Math.Min(2000, times[i] - times[i-1]) * (strains[i] / totalDifficulty);
-            }
-
-            return targetTime;
-        }
-
-        private double expectedFcTime(double skill)
-        {
-            double last_timestamp = times[0]-5; // time taken to retry map
-            double fcTime = 0;
-
-            for (int i=0;i<strains.Count;i++)
-            {
-                double dt = times[i]-last_timestamp;
-                last_timestamp = times[i];
-                fcTime = (fcTime + dt) / fcProbability(skill, strains[i]);
-            }
-            return fcTime - (times[times.Count - 1] - times[0]);
-        }
-
-        /// <summary>
-        /// The final estimated skill level necessary to full combo the entire beatmap.
-        /// </summary>
-        /// <param name="totalDifficulty">The total difficulty of all objects in the map.</param>
-        private double fcTimeSkillLevel(double totalDifficulty)
-        {
-            double lengthEstimate = 0.4 * (times[times.Count - 1] - times[0]);
-            target_fc_time += 45 * Math.Max(0, expectedTargetTime(totalDifficulty) - 60000);
-            // for every minute of straining time past 1 minute, add 45 mins to estimated time to FC.
-            double fcProb = lengthEstimate / target_fc_time;
-            double skill = skillLevel(fcProb, totalDifficulty);
-            for (int i=0; i<5; ++i)
-            {
-                double fcTime = expectedFcTime(skill);
-                lengthEstimate = fcTime * fcProb;
-                fcProb = lengthEstimate / target_fc_time;
-                skill = skillLevel(fcProb, totalDifficulty);
-                if (Math.Abs(fcTime - target_fc_time) < target_fc_precision * target_fc_time)
-                {
-                    //enough precision
-                    break;
-                }
-            }
-            return skill;
+            return calculateDifficultyValue();
         }
     }
 }

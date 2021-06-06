@@ -19,18 +19,19 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
     public class Tap : OsuSkill
     {
         protected override double StarsPerDouble => 1.075;
-        protected override int HistoryLength => 16;
+        protected override int HistoryLength => 32;
         protected override int decayExcessThreshold => 500;
         protected override double baseDecay => 0.9;
 
         private int strainTimeBuffRange = 75;
+        private double minStrainTime = 50;
 
         private double currentStrain = 1;
         private double singleStrain = 1;
 
         // Global Tap Strain Multiplier.
-        private double singleMultiplier = 2.375;
-        private double strainMultiplier = 2.725;
+        private double singleMultiplier = 2.25;
+        private double strainMultiplier = 1.8125;
         private double rhythmMultiplier = 1;
 
         public Tap(Mod[] mods)
@@ -64,10 +65,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
                 if (isRatioEqual(1.5, prevDelta, currDelta) || isRatioEqual(1.5, currDelta, prevDelta))
                 {
                     if (Previous[i - 1].BaseObject is Slider || Previous[i].BaseObject is Slider)
-                        specialTransitionCount += 50.0 / Math.Sqrt(prevDelta * currDelta) * ((double)i / HistoryLength);
-                    else
                         specialTransitionCount += 250.0 / Math.Sqrt(prevDelta * currDelta) * ((double)i / HistoryLength);
+                    else
+                        specialTransitionCount += 500.0 / Math.Sqrt(prevDelta * currDelta) * ((double)i / HistoryLength);
                 }
+
+                if (currDelta < minStrainTime)
+                    minStrainTime = currDelta;
 
                 if (firstDeltaSwitch)
                 {
@@ -136,19 +140,24 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
             double strainValue = .25;
 
-            double avgDeltaTime = (osuCurrent.StrainTime + Math.Max(50, Previous[0].DeltaTime)) / 2;
+            double avgDeltaTime = (Math.Max(50, current.DeltaTime) + Math.Max(50, Previous[0].DeltaTime)) / 2;
+            // double avgDeltaTime = (osuCurrent.StrainTime + Math.Max(50, Previous[0].DeltaTime)) / 2;
 
             double rhythmComplexity = calculateRhythmDifficulty(); // equals 1 with no rhythm difficulty, otherwise scales with a sqrt
 
-            if (strainTimeBuffRange / avgDeltaTime > 1) // scale tap value for high BPM (above 200).
-                strainValue += Math.Pow(strainTimeBuffRange / avgDeltaTime, 2);
-            else
-                strainValue += Math.Pow(strainTimeBuffRange / avgDeltaTime, 1);
+            avgDeltaTime = (avgDeltaTime - 25);
+
+            strainValue += strainTimeBuffRange / avgDeltaTime;
+
+            // if (strainTimeBuffRange / avgDeltaTime > 1) // scale tap value for high BPM (above 200).
+            //     strainValue += Math.Pow(strainTimeBuffRange / avgDeltaTime, 2);
+            // else
+            //     strainValue += Math.Pow(strainTimeBuffRange / avgDeltaTime, 1);
 
             singleStrain *= computeDecay(baseDecay, osuCurrent.StrainTime);
             singleStrain += (.5 + osuCurrent.SnapProbability) * strainValue * singleMultiplier;
 
-            currentStrain *= computeDecay(baseDecay, osuCurrent.StrainTime);
+            currentStrain *= Math.Pow(computeDecay(baseDecay, osuCurrent.StrainTime), Math.Sqrt(osuCurrent.StrainTime / minStrainTime));
             currentStrain += strainValue * strainMultiplier;
 
             return Math.Max(Math.Min((1 / (1 - baseDecay)) * strainValue * strainMultiplier, // prevent over buffing strain past death stream level
