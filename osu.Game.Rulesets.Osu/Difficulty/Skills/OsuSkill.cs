@@ -21,8 +21,6 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         protected virtual double StarsPerDouble => 1.0;
 
-        private double difficultyExponent => 1.0 / Math.Log(StarsPerDouble, 2);
-
         protected OsuSkill(Mod[] mods) : base(mods)
         {
         }
@@ -57,9 +55,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         /// <summary>
         /// The total summarized difficulty value of all strains for every <see cref="DifficultyHitObject"/> in the beatmap.
         /// </summary>
-        private double calculateDifficultyValue()
+        protected double calculateDifficultyValue(List<double> strains, double starsPerDouble)
         {
-            double difficultyExponent = 1.0 / Math.Log(StarsPerDouble, 2);
+            double difficultyExponent = 1.0 / Math.Log(starsPerDouble, 2);
             double SR = 0;
 
             // Math here preserves the property that two notes of equal difficulty x, we have their summed difficulty = x*StarsPerDouble
@@ -71,6 +69,13 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             }
 
             return Math.Pow(SR, 1.0 / difficultyExponent);
+        }
+
+        public double combineStarRating(double first, double second, double starsPerDouble)
+        {
+            double difficultyExponent = 1.0 / Math.Log(starsPerDouble, 2);
+
+            return Math.Pow(Math.Pow(first, difficultyExponent) + Math.Pow(second, difficultyExponent), 1.0 / difficultyExponent);
         }
 
         /// <summary>
@@ -95,7 +100,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
 
         public override double DifficultyValue()
         {
-            return calculateDifficultyValue();
+            return calculateDifficultyValue(strains, StarsPerDouble);
         }
     }
 }

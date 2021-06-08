@@ -30,7 +30,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
         private double singleStrain = 1;
 
         // Global Tap Strain Multiplier.
-        private double singleMultiplier = 2.25;
+        private double singleMultiplier = 1.575;
         private double strainMultiplier = 1.8125;
         private double rhythmMultiplier = 1;
 
@@ -155,7 +155,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty.Skills
             //     strainValue += Math.Pow(strainTimeBuffRange / avgDeltaTime, 1);
 
             singleStrain *= computeDecay(baseDecay, osuCurrent.StrainTime);
-            singleStrain += (.5 + osuCurrent.SnapProbability) * strainValue * singleMultiplier;
+            singleStrain += (1.0 + osuCurrent.SnapProbability) * strainValue * singleMultiplier;
 
             currentStrain *= Math.Pow(computeDecay(baseDecay, osuCurrent.StrainTime), Math.Sqrt(osuCurrent.StrainTime / minStrainTime));
             currentStrain += strainValue * strainMultiplier;

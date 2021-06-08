@@ -41,6 +41,12 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             double preempt = (int)BeatmapDifficulty.DifficultyRange(beatmap.BeatmapInfo.BaseDifficulty.ApproachRate, 1800, 1200, 450) / clockRate;
 
             double aimRating = Math.Pow(skills[0].DifficultyValue(), .75) * difficulty_multiplier;
+
+            double snapRating = ((Aim)skills[0]).calculateSnapDifficulty();
+            double flowRating = ((Aim)skills[0]).calculateFlowDifficulty();
+
+            aimRating = Math.Max(aimRating, Math.Pow(((OsuSkill)skills[0]).combineStarRating(snapRating, flowRating, 1.25), .75) * difficulty_multiplier);
+
             double speedRating = Math.Pow(skills[1].DifficultyValue(), .75) * difficulty_multiplier;
 
             // Calculate total star rating

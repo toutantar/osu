@@ -110,7 +110,7 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             if (mods.Any(h => h is OsuModFlashlight))
             {
                 // Apply object-based bonus for flashlight.
-                aimValue *= 1.0 + 0.25 * Math.Min(1.0, totalHits / 200.0) +
+                aimValue *= 1.0 + 0.35 * Math.Min(1.0, totalHits / 200.0) +
                             (totalHits > 200
                                 ? 0.3 * Math.Min(1.0, (totalHits - 200) / 300.0) +
                                   (totalHits > 500 ? (totalHits - 500) / 1200.0 : 0.0)
@@ -164,9 +164,9 @@ namespace osu.Game.Rulesets.Osu.Difficulty
             // where an SS on lower OD is actually worth more than a 95% on OD11, even though the OD11 requires a greater
             // window of precision.
 
-            double p100 = (double)countOk / amountHitObjectsWithAccuracy;
-            double p50 = (double)countMeh / amountHitObjectsWithAccuracy;
-            double pm = (double)countMiss / amountHitObjectsWithAccuracy;
+            double p100 = (2 * (double)countOk) / amountHitObjectsWithAccuracy;
+            double p50 = (2 * (double)countMeh) / amountHitObjectsWithAccuracy;
+            double pm = (2 * (double)countMiss) / amountHitObjectsWithAccuracy;
             double p300 = 1.0 - pm - p100 - p50;
 
             double m300 = 79.5 - 6.0 * Attributes.OverallDifficulty;
